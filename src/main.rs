@@ -3,6 +3,7 @@ mod file_finder;
 mod language_detector;
 mod test_module;
 
+use clap::{Arg, Command};
 use file_finder::{FileInfo, find_all_files};
 use language_detector::determine_language;
 
@@ -10,21 +11,46 @@ use language_detector::determine_language;
 extern crate lazy_static;
 
 fn main() {
+    let matches = Command::new("enk")
+        .about("Environment variable detector")
+        .arg(
+            Arg::new("json")
+                .short('j')
+                .long("json")
+                .help("Output results as JSON")
+                .action(clap::ArgAction::SetTrue),
+        )
+        .get_matches();
+
+    let json_output = matches.get_flag("json");
+
     match find_all_files(".") {
         Ok(files) => {
             let files = detect_languages_in_files(files);
             let files = detect_env_vars_in_files(files);
 
-            let file_with_env_vars = files
+            let file_with_env_vars: Vec<&FileInfo> = files
                 .iter()
-                .filter(|f| !f.envars.is_empty() && f.language.is_some());
-           
-            human_output(file_with_env_vars.collect());
+                .filter(|f| !f.envars.is_empty() && f.language.is_some())
+                .collect();
+
+            if json_output {
+                json_output_fn(&file_with_env_vars);
+            } else {
+                human_output(file_with_env_vars);
+            }
         }
         Err(e) => eprintln!("Error reading files: {e}"),
     }
 }
 
+
+fn json_output_fn(files: &[&FileInfo]) {
+    match serde_json::to_string_pretty(files) {
+        Ok(json) => println!("{}", json),
+        Err(e) => eprintln!("Error serializing to JSON: {}", e),
+    }
+}
 
 fn human_output(file_with_env_vars: Vec<&FileInfo>) {
     let count = file_with_env_vars.iter().clone().count();

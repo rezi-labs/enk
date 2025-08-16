@@ -1,10 +1,11 @@
 use std::fs;
 use std::io::Result;
 use std::path::{Path, PathBuf};
+use serde::{Deserialize, Serialize};
 
 use crate::language_detector::ProgrammingLanguage;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EnvVar {
     pub key: String,
     pub line: u128,
@@ -17,11 +18,12 @@ impl EnvVar {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileInfo {
     pub full_path: PathBuf,
     pub filename: String,
     pub file_type: String,
+    #[serde(skip)]
     pub content: String,
     pub language: Option<ProgrammingLanguage>,
     pub envars: Vec<EnvVar>,
