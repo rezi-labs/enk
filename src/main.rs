@@ -15,11 +15,16 @@ fn main() {
             let files = detect_languages_in_files(files);
             let files = detect_env_vars_in_files(files);
 
-            println!("Found {} files:", files.len());
-            for file in files {
-                if file.language.is_some() {
-                    display_file_info(&file);
-                }
+            let file_with_env_vars = files
+                .iter()
+                .filter(|f| !f.envars.is_empty() && f.language.is_some());
+            let count = file_with_env_vars.clone().count();
+            let file_or_files = if count == 1 { "file" } else { "files" };
+
+            println!("{count} {file_or_files} with environment variables");
+
+            for file in file_with_env_vars {
+                display_file_info(file);
             }
         }
         Err(e) => eprintln!("Error reading files: {e}"),
@@ -27,19 +32,35 @@ fn main() {
 }
 
 fn display_file_info(file: &FileInfo) {
+    if file.envars.is_empty() {
+        return;
+    }
     println!("Environment variables found:");
+    println!();
 
-    println!("Path: {:?}", file.full_path);
     display_env_vars(file);
 }
 
 fn display_env_vars(file: &FileInfo) {
+    let lines: Vec<&str> = file.content.lines().collect();
+    println!("{}:", file.full_path.to_str().unwrap());
     for env_var in &file.envars {
         println!(
-            "  {} at line {} col {}",
-            env_var.key, env_var.line, env_var.col
+            "{} at line {} col {} ",
+            env_var.key, env_var.line, env_var.col,
         );
-        println!(" Preview");
+
+        let line_idx = (env_var.line as usize).saturating_sub(1);
+        let start_line = line_idx.saturating_sub(2);
+        let end_line = std::cmp::min(line_idx + 3, lines.len());
+
+        for i in start_line..end_line {
+            let marker = if i == line_idx { ">" } else { " " };
+            let line = lines.get(i).unwrap_or(&"...");
+            println!("{} {:3}:{}", marker, i + 1, line);
+        }
+        println!(" {:4}:...", end_line + 1);
+        println!();
     }
 }
 
