@@ -18,16 +18,24 @@ fn main() {
             let file_with_env_vars = files
                 .iter()
                 .filter(|f| !f.envars.is_empty() && f.language.is_some());
-            let count = file_with_env_vars.clone().count();
-            let file_or_files = if count == 1 { "file" } else { "files" };
-
-            println!("{count} {file_or_files} with environment variables");
-
-            for file in file_with_env_vars {
-                display_file_info(file);
-            }
+           
+            human_output(file_with_env_vars.collect());
         }
         Err(e) => eprintln!("Error reading files: {e}"),
+    }
+}
+
+
+fn human_output(file_with_env_vars: Vec<&FileInfo>) {
+    let count = file_with_env_vars.iter().clone().count();
+    let file_or_files = if count == 1 { "file" } else { "files" };
+
+    println!("{count} {file_or_files} with environment variables");
+    
+    println!("");
+
+    for file in file_with_env_vars {
+        display_file_info(file);
     }
 }
 
@@ -35,7 +43,6 @@ fn display_file_info(file: &FileInfo) {
     if file.envars.is_empty() {
         return;
     }
-    println!("Environment variables found:");
     println!();
 
     display_env_vars(file);
