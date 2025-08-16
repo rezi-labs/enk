@@ -5,12 +5,26 @@ use std::path::{Path, PathBuf};
 use crate::language_detector::ProgrammingLanguage;
 
 #[derive(Debug, Clone)]
+pub struct EnvVar {
+    pub key: String,
+    pub line: u128,
+    pub col: u128,
+}
+
+impl EnvVar {
+    pub fn new(key: String, line: u128, col: u128) -> Self {
+        EnvVar { key, line, col }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct FileInfo {
     pub full_path: PathBuf,
     pub filename: String,
     pub file_type: String,
     pub content: String,
     pub language: Option<ProgrammingLanguage>,
+    pub envars: Vec<EnvVar>,
 }
 
 impl FileInfo {
@@ -33,11 +47,19 @@ impl FileInfo {
             file_type,
             content,
             language: None,
+            envars: Vec::new(),
         }
     }
 
     pub fn set_language(&mut self, language: Option<ProgrammingLanguage>) {
         self.language = language;
+    }
+
+    pub fn add_env_var(&mut self, env_var: Vec<EnvVar>) {
+        self.envars.extend(env_var);
+    }
+    pub fn get_language(&self) -> Option<ProgrammingLanguage> {
+        self.language.clone()
     }
 }
 
