@@ -2,6 +2,7 @@ use std::fs;
 use std::io::Result;
 use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
+use ignore::WalkBuilder;
 
 use crate::language_detector::ProgrammingLanguage;
 
@@ -67,32 +68,32 @@ impl FileInfo {
 
 pub fn find_all_files<P: AsRef<Path>>(dir: P) -> Result<Vec<FileInfo>> {
     let mut files = Vec::new();
-    find_files_recursive(dir.as_ref(), &mut files)?;
-    Ok(files)
-}
+    
+    let walker = WalkBuilder::new(dir.as_ref())
+        .hidden(false)
+        .git_ignore(true)
+        .git_global(true)
+        .git_exclude(true)
+        .build();
 
-fn find_files_recursive(dir: &Path, files: &mut Vec<FileInfo>) -> Result<()> {
-    if dir.is_dir() {
-        for entry in fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = entry.path();
+    for result in walker {
+        let entry = result.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let path = entry.path();
 
-            if path.is_dir() {
-                find_files_recursive(&path, files)?;
-            } else if path.is_file() {
-                match fs::read_to_string(&path) {
-                    Ok(content) => {
-                        files.push(FileInfo::new(path, content));
-                    }
-                    Err(_) => {
-                        files.push(FileInfo::new(
-                            path,
-                            String::from("[Binary file or read error]"),
-                        ));
-                    }
+        if path.is_file() {
+            match fs::read_to_string(&path) {
+                Ok(content) => {
+                    files.push(FileInfo::new(path.to_path_buf(), content));
+                }
+                Err(_) => {
+                    files.push(FileInfo::new(
+                        path.to_path_buf(),
+                        String::from("[Binary file or read error]"),
+                    ));
                 }
             }
         }
     }
-    Ok(())
+    
+    Ok(files)
 }
