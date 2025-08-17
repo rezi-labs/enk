@@ -44,11 +44,10 @@ fn main() {
     }
 }
 
-
 fn json_output_fn(files: &[&FileInfo]) {
     match serde_json::to_string_pretty(files) {
-        Ok(json) => println!("{}", json),
-        Err(e) => eprintln!("Error serializing to JSON: {}", e),
+        Ok(json) => println!("{json}"),
+        Err(e) => eprintln!("Error serializing to JSON: {e}"),
     }
 }
 
@@ -57,8 +56,8 @@ fn human_output(file_with_env_vars: Vec<&FileInfo>) {
     let file_or_files = if count == 1 { "file" } else { "files" };
 
     println!("{count} {file_or_files} with environment variables");
-    
-    println!("");
+
+    println!();
 
     for file in file_with_env_vars {
         display_file_info(file);

@@ -1,8 +1,8 @@
+use ignore::WalkBuilder;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Result;
 use std::path::{Path, PathBuf};
-use serde::{Deserialize, Serialize};
-use ignore::WalkBuilder;
 
 use crate::language_detector::ProgrammingLanguage;
 
@@ -68,7 +68,7 @@ impl FileInfo {
 
 pub fn find_all_files<P: AsRef<Path>>(dir: P) -> Result<Vec<FileInfo>> {
     let mut files = Vec::new();
-    
+
     let walker = WalkBuilder::new(dir.as_ref())
         .hidden(false)
         .git_ignore(true)
@@ -77,11 +77,11 @@ pub fn find_all_files<P: AsRef<Path>>(dir: P) -> Result<Vec<FileInfo>> {
         .build();
 
     for result in walker {
-        let entry = result.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let entry = result.map_err(std::io::Error::other)?;
         let path = entry.path();
 
         if path.is_file() {
-            match fs::read_to_string(&path) {
+            match fs::read_to_string(path) {
                 Ok(content) => {
                     files.push(FileInfo::new(path.to_path_buf(), content));
                 }
@@ -94,6 +94,6 @@ pub fn find_all_files<P: AsRef<Path>>(dir: P) -> Result<Vec<FileInfo>> {
             }
         }
     }
-    
+
     Ok(files)
 }
