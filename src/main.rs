@@ -14,6 +14,7 @@ extern crate lazy_static;
 enum OutputFormat {
     Json,
     Human,
+    Csv,
 }
 
 #[derive(Parser, Debug)]
@@ -40,6 +41,7 @@ fn main() {
             match cli.format {
                 OutputFormat::Json => json_output_fn(&file_with_env_vars),
                 OutputFormat::Human => human_output(file_with_env_vars),
+                OutputFormat::Csv => csv_output_fn(&file_with_env_vars),
             }
         }
         Err(e) => eprintln!("Error reading files: {e}"),
@@ -95,6 +97,30 @@ fn display_env_vars(file: &FileInfo) {
         }
         println!(" {:4}:...", end_line + 1);
         println!();
+    }
+}
+
+fn csv_escape(s: &str) -> String {
+    if s.contains(',') || s.contains('"') || s.contains('\n') {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
+    }
+}
+
+fn csv_output_fn(files: &[&FileInfo]) {
+    println!("file_path,env_key,line,col");
+    for file in files {
+        let file_path = file.full_path.to_str().unwrap_or("");
+        for env_var in &file.envars {
+            println!(
+                "{},{},{},{}",
+                csv_escape(file_path),
+                csv_escape(&env_var.key),
+                env_var.line,
+                env_var.col
+            );
+        }
     }
 }
 
