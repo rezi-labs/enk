@@ -3,26 +3,29 @@ mod file_finder;
 mod language_detector;
 mod test_module;
 
-use clap::{Arg, Command};
+use clap::{Parser, ValueEnum};
 use file_finder::{FileInfo, find_all_files};
 use language_detector::determine_language;
 
 #[macro_use]
 extern crate lazy_static;
 
-fn main() {
-    let matches = Command::new("enk")
-        .about("Environment variable detector")
-        .arg(
-            Arg::new("json")
-                .short('j')
-                .long("json")
-                .help("Output results as JSON")
-                .action(clap::ArgAction::SetTrue),
-        )
-        .get_matches();
+#[derive(Debug, Clone, ValueEnum)]
+enum OutputFormat {
+    Json,
+    Human,
+}
 
-    let json_output = matches.get_flag("json");
+#[derive(Parser, Debug)]
+#[command(author, version, about = "Environment variable detector")]
+struct Cli {
+    #[arg(value_enum, short, long, default_value = "human")]
+    format: OutputFormat,
+    // Add subcommands here if needed
+}
+
+fn main() {
+    let cli = Cli::parse();
 
     match find_all_files(".") {
         Ok(files) => {
@@ -34,10 +37,9 @@ fn main() {
                 .filter(|f| !f.envars.is_empty() && f.language.is_some())
                 .collect();
 
-            if json_output {
-                json_output_fn(&file_with_env_vars);
-            } else {
-                human_output(file_with_env_vars);
+            match cli.format {
+                OutputFormat::Json => json_output_fn(&file_with_env_vars),
+                OutputFormat::Human => human_output(file_with_env_vars),
             }
         }
         Err(e) => eprintln!("Error reading files: {e}"),
